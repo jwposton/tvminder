@@ -82,9 +82,8 @@ export async function destroySession(sessionId: string) {
 }
 
 const DEFAULT_TAGS = [
-  { name: "Watching", color: "#6366f1" },
   { name: "Completed", color: "#22c55e" },
-  { name: "On Hold", color: "#f59e0b" },
+  { name: "Watching", color: "#6366f1" },
   { name: "Priority", color: "#ef4444" },
 ];
 

@@ -1,13 +1,18 @@
 import Link from "next/link";
 import type { AuthUser } from "@/lib/auth";
 import { LogoutButton } from "@/components/LogoutButton";
+import { NavVersion } from "@/components/NavVersion";
 
 export function Nav({ user }: { user: AuthUser }) {
   return (
     <nav className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
       <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <Link href="/" className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
-          TVMinder
+        <Link
+          href="/"
+          className="flex flex-col leading-tight text-indigo-600 dark:text-indigo-400"
+        >
+          <span className="text-xl font-bold">TVMinder</span>
+          <NavVersion />
         </Link>
         <div className="flex items-center gap-4 text-sm font-medium">
           <Link href="/" className="text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100">
