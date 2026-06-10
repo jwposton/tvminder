@@ -9,7 +9,7 @@ Self-hosted TV show tracker for families. Monitor your shows, track watched epis
 - Mark seasons/episodes watched; custom tags
 - Filter views: upcoming, recently aired, newly released unwatched
 - Regional streaming availability (TMDb; optional Watchmode upgrade)
-- SQLite database persisted in a Docker volume
+- SQLite database persisted via a bind-mounted `./data` directory
 
 ## Prerequisites
 
@@ -70,18 +70,23 @@ Show metadata is shared across users and cached server-side. Watch lists, tags, 
 
 ## Data persistence
 
-Application data is stored in the `tvminder-data` Docker volume at `/data/tvminder.db` inside the container.
+Application data is stored in `./data/tvminder.db` on the host (bind-mounted to `/data` in the container). The process user is set in `docker-compose.prod.yml` via `user: "1000:1000"` — ensure `./data` is writable by that uid on first deploy:
+
+```bash
+mkdir -p data
+chown 1000:1000 data   # or your deploy user's uid if it is 1000
+```
 
 ```bash
 # Back up the database
-docker compose -f docker-compose.prod.yml exec tvminder \
-  cp /data/tvminder.db /data/tvminder.db.bak
+cp data/tvminder.db data/tvminder.db.bak
 ```
 
-To reset completely, stop the stack and remove the volume:
+To reset completely, stop the stack and remove the database file:
 
 ```bash
-docker compose -f docker-compose.prod.yml down -v
+docker compose -f docker-compose.prod.yml down
+rm -f data/tvminder.db
 ```
 
 ## Keeping show data fresh

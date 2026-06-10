@@ -5,11 +5,9 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    user: "1000:1000"
     environment:
       DATABASE_URL: file:/data/tvminder.db
     volumes:
-      - tvminder-data:/data
+      - ./data:/data
     restart: unless-stopped
-
-volumes:
-  tvminder-data:
