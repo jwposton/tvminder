@@ -23,20 +23,19 @@ ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 ENV DATABASE_URL=file:/data/tvminder.db
 
-RUN addgroup --system --gid 1000 app \
-  && adduser --system --uid 1000 -G app app \
-  && mkdir -p /data \
-  && chown app:app /data
+# node:20-alpine already provides node:node at uid/gid 1000
+RUN mkdir -p /data \
+  && chown node:node /data
 
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=app:app /app/.next/standalone ./
-COPY --from=builder --chown=app:app /app/.next/static ./.next/static
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN npm install --no-save prisma@6.19.3 \
   && chmod +x /entrypoint.sh \
-  && chown -R app:app /app
+  && chown -R node:node /app
 
 EXPOSE 3000
 
