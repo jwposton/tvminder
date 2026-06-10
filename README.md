@@ -133,4 +133,6 @@ For local development without Docker, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## License
 
-Private / personal use. TMDb and Watchmode have their own API terms of use.
+[MIT](LICENSE) — see `LICENSE` for details.
+
+TMDb and Watchmode have their own API terms of use; this app is not endorsed by TMDb.
