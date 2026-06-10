@@ -1,9 +1,9 @@
-import { startOfDay, isAfter } from "date-fns";
 import { refreshShowCache } from "@/lib/cache";
 import { prisma } from "@/lib/db";
 import { pickBestMatch } from "@/lib/import-match";
 import { searchTv, type TmdbSearchResult } from "@/lib/tmdb";
 import type { AuthUser } from "@/lib/auth";
+import { setAiredEpisodesWatched } from "@/lib/watched";
 
 export type CsvImportRow = {
   line: number;
@@ -155,45 +155,6 @@ async function resolveTagId(
   return null;
 }
 
-async function markAiredEpisodesWatched(
-  userId: number,
-  monitoredShowId: number,
-  tmdbShowId: number
-) {
-  const today = startOfDay(new Date());
-  const episodes = await prisma.episodeCache.findMany({
-    where: { tmdbShowId },
-  });
-
-  for (const ep of episodes) {
-    if (
-      !ep.airDate ||
-      (isAfter(ep.airDate, today) && ep.airDate.getTime() !== today.getTime())
-    ) {
-      continue;
-    }
-
-    await prisma.watchedEpisode.upsert({
-      where: {
-        userId_tmdbShowId_season_episode: {
-          userId,
-          tmdbShowId,
-          season: ep.season,
-          episode: ep.episode,
-        },
-      },
-      create: {
-        userId,
-        tmdbShowId,
-        season: ep.season,
-        episode: ep.episode,
-        monitoredShowId,
-      },
-      update: { watchedAt: new Date() },
-    });
-  }
-}
-
 export async function commitImport(
   user: AuthUser,
   rows: ImportCommitRow[],
@@ -246,7 +207,7 @@ export async function commitImport(
       }
 
       if (row.status === 1) {
-        await markAiredEpisodesWatched(user.id, monitored.id, row.tmdbId);
+        await setAiredEpisodesWatched(user.id, monitored.id, row.tmdbId);
       }
 
       results.push({

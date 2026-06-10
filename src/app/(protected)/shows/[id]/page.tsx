@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { format } from "date-fns";
 import { TmdbAttribution } from "@/components/TmdbAttribution";
+import { isEpisodeAired } from "@/lib/episodes";
 import { posterUrl, stillUrl } from "@/lib/tmdb";
 
 type Tag = { id: number; name: string; color: string };
@@ -52,6 +53,7 @@ export default function ShowDetailPage() {
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [newTagName, setNewTagName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [togglingAll, setTogglingAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadShow = useCallback(async () => {
@@ -93,6 +95,20 @@ export default function ShowDetailPage() {
       body: JSON.stringify({ season, watched: !allWatched }),
     });
     await loadShow();
+  }
+
+  async function toggleAllAired(allAiredWatched: boolean) {
+    setTogglingAll(true);
+    try {
+      await fetch(`/api/shows/${id}/watched`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ watched: !allAiredWatched }),
+      });
+      await loadShow();
+    } finally {
+      setTogglingAll(false);
+    }
   }
 
   async function addTag(tagId: number) {
@@ -142,6 +158,10 @@ export default function ShowDetailPage() {
 
   const poster = posterUrl(show.posterPath, "w342");
   const appliedTagIds = new Set(show.tags.map((t) => t.id));
+  const allEpisodes = show.seasons.flatMap(({ episodes }) => episodes);
+  const airedEpisodes = allEpisodes.filter((ep) => isEpisodeAired(ep.airDate));
+  const hasAired = airedEpisodes.length > 0;
+  const allAiredWatched = hasAired && airedEpisodes.every((ep) => ep.watched);
 
   return (
     <>
@@ -256,19 +276,39 @@ export default function ShowDetailPage() {
           </div>
         </div>
 
-        <h2 className="mb-4 text-xl font-semibold">Episodes</h2>
+        <div className="mb-4 flex items-center justify-between gap-4">
+          <h2 className="text-xl font-semibold">Episodes</h2>
+          {hasAired && (
+            <button
+              onClick={() => toggleAllAired(allAiredWatched)}
+              disabled={togglingAll}
+              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white hover:bg-indigo-700 disabled:opacity-50"
+            >
+              {togglingAll
+                ? "Updating…"
+                : allAiredWatched
+                  ? "Mark all unwatched"
+                  : "Mark all watched"}
+            </button>
+          )}
+        </div>
         {show.seasons.map(({ season, episodes }) => {
-          const allWatched = episodes.every((e) => e.watched);
+          const seasonAired = episodes.filter((ep) => isEpisodeAired(ep.airDate));
+          const seasonHasAired = seasonAired.length > 0;
+          const allSeasonAiredWatched =
+            seasonHasAired && seasonAired.every((e) => e.watched);
           return (
             <div key={season} className="mb-6">
               <div className="mb-2 flex items-center justify-between">
                 <h3 className="font-medium">Season {season}</h3>
-                <button
-                  onClick={() => toggleSeason(season, allWatched)}
-                  className="text-xs text-indigo-600 hover:underline"
-                >
-                  {allWatched ? "Mark all unwatched" : "Mark all watched"}
-                </button>
+                {seasonHasAired && (
+                  <button
+                    onClick={() => toggleSeason(season, allSeasonAiredWatched)}
+                    className="text-xs text-indigo-600 hover:underline"
+                  >
+                    {allSeasonAiredWatched ? "Mark all unwatched" : "Mark all watched"}
+                  </button>
+                )}
               </div>
               <div className="grid gap-2">
                 {episodes.map((ep) => {

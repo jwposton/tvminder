@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAuthError, requireApiUser } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
+import { setAiredEpisodesWatchedState } from "@/lib/watched";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -85,36 +86,41 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: "Show not found" }, { status: 404 });
   }
 
-  const episodes = await prisma.episodeCache.findMany({
-    where: { tmdbShowId: show.tmdbId, season },
+  await setAiredEpisodesWatchedState(
+    user.id,
+    show.id,
+    show.tmdbId,
+    seasonWatched !== false,
+    { season }
+  );
+
+  return NextResponse.json({ ok: true });
+}
+
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const userResult = await requireApiUser();
+  if (isAuthError(userResult)) return userResult;
+  const user = userResult;
+
+  const { id } = await params;
+  const showId = parseInt(id, 10);
+  const body = await request.json().catch(() => ({}));
+  const { watched: markWatched = true } = body as { watched?: boolean };
+
+  const show = await prisma.monitoredShow.findFirst({
+    where: { id: showId, userId: user.id },
   });
 
-  if (seasonWatched === false) {
-    await prisma.watchedEpisode.deleteMany({
-      where: { userId: user.id, tmdbShowId: show.tmdbId, season },
-    });
-  } else {
-    for (const ep of episodes) {
-      await prisma.watchedEpisode.upsert({
-        where: {
-          userId_tmdbShowId_season_episode: {
-            userId: user.id,
-            tmdbShowId: show.tmdbId,
-            season: ep.season,
-            episode: ep.episode,
-          },
-        },
-        create: {
-          userId: user.id,
-          tmdbShowId: show.tmdbId,
-          season: ep.season,
-          episode: ep.episode,
-          monitoredShowId: show.id,
-        },
-        update: { watchedAt: new Date() },
-      });
-    }
+  if (!show) {
+    return NextResponse.json({ error: "Show not found" }, { status: 404 });
   }
+
+  await setAiredEpisodesWatchedState(
+    user.id,
+    show.id,
+    show.tmdbId,
+    markWatched !== false
+  );
 
   return NextResponse.json({ ok: true });
 }
