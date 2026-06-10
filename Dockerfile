@@ -11,8 +11,10 @@ COPY prisma ./prisma
 RUN npm ci
 
 FROM base AS builder
+ARG APP_VERSION
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ENV APP_VERSION=${APP_VERSION}
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate
 RUN npm run build

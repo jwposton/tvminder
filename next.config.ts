@@ -8,7 +8,7 @@ const pkg = JSON.parse(
 
 const nextConfig: NextConfig = {
   env: {
-    NEXT_PUBLIC_APP_VERSION: pkg.version,
+    NEXT_PUBLIC_APP_VERSION: process.env.APP_VERSION ?? pkg.version,
   },
   output: "standalone",
   images: {
