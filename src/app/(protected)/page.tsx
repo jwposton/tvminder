@@ -2,24 +2,31 @@ import { Suspense } from "react";
 import { FilterTabs } from "@/components/FilterTabs";
 import { ShowCard } from "@/components/ShowCard";
 import { TmdbAttribution } from "@/components/TmdbAttribution";
-import { getMonitoredShows } from "@/lib/shows";
+import { getMonitoredShows, parseTagIdsParam } from "@/lib/shows";
+import { TagFilter } from "@/components/TagFilter";
 import type { ShowFilter } from "@/lib/filters";
 
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; tags?: string }>;
 }) {
-  const { filter = "all" } = await searchParams;
-  const shows = await getMonitoredShows(filter as ShowFilter);
+  const { filter = "all", tags } = await searchParams;
+  const tagIds = parseTagIdsParam(tags);
+  const shows = await getMonitoredShows(filter as ShowFilter, tagIds);
 
   return (
     <>
       <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <h1 className="text-2xl font-bold">My Shows</h1>
+        <div className="mb-6 flex flex-col gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-2xl font-bold">My Shows</h1>
+            <Suspense fallback={null}>
+              <FilterTabs />
+            </Suspense>
+          </div>
           <Suspense fallback={null}>
-            <FilterTabs />
+            <TagFilter />
           </Suspense>
         </div>
 

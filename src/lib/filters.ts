@@ -39,6 +39,18 @@ export type MonitoredShowView = {
 
 const today = () => startOfDay(new Date());
 
+export function filterByTags(
+  shows: MonitoredShowView[],
+  tagIds: number[]
+): MonitoredShowView[] {
+  if (tagIds.length === 0) return shows;
+
+  const selected = new Set(tagIds);
+  return shows.filter((show) =>
+    show.tags.some((tag) => selected.has(tag.id))
+  );
+}
+
 export function filterShows(
   shows: MonitoredShowView[],
   filter: ShowFilter,

@@ -3,14 +3,15 @@ import { refreshShowCache } from "@/lib/cache";
 import { isAuthError, requireApiUser } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import type { ShowFilter } from "@/lib/filters";
-import { getMonitoredShows } from "@/lib/shows";
+import { getMonitoredShows, parseTagIdsParam } from "@/lib/shows";
 
 export async function GET(request: NextRequest) {
   const userResult = await requireApiUser();
   if (isAuthError(userResult)) return userResult;
 
   const filter = (request.nextUrl.searchParams.get("filter") ?? "all") as ShowFilter;
-  const shows = await getMonitoredShows(filter);
+  const tagIds = parseTagIdsParam(request.nextUrl.searchParams.get("tags") ?? undefined);
+  const shows = await getMonitoredShows(filter, tagIds);
   return NextResponse.json({ shows });
 }
 

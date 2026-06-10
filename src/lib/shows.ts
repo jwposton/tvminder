@@ -3,12 +3,16 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import {
   computeEpisodeStats,
+  filterByTags,
   filterShows,
   type MonitoredShowView,
   type ShowFilter,
 } from "@/lib/filters";
 
-export async function getMonitoredShows(filter: ShowFilter = "all"): Promise<MonitoredShowView[]> {
+export async function getMonitoredShows(
+  filter: ShowFilter = "all",
+  tagIds: number[] = []
+): Promise<MonitoredShowView[]> {
   const user = await getCurrentUser();
   if (!user) return [];
 
@@ -76,5 +80,13 @@ export async function getMonitoredShows(filter: ShowFilter = "all"): Promise<Mon
     });
   }
 
-  return filterShows(views, filter);
+  return filterShows(filterByTags(views, tagIds), filter);
+}
+
+export function parseTagIdsParam(tags: string | undefined): number[] {
+  if (!tags?.trim()) return [];
+  return tags
+    .split(",")
+    .map((id) => parseInt(id.trim(), 10))
+    .filter((id) => !isNaN(id));
 }
