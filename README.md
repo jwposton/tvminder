@@ -63,7 +63,9 @@ If the GHCR package is private, run `docker login ghcr.io` first, or make the pa
 |----------|----------|---------|-------------|
 | `TMDB_API_KEY` | Yes | — | TMDb API Read Access Token (one key serves all users) |
 | `DATABASE_URL` | Yes | `file:/data/tvminder.db` | SQLite path inside the container |
-| `CRON_SECRET` | Recommended | — | Bearer token for the nightly refresh endpoint |
+| `CRON_SECRET` | Yes (Docker) | — | Non-empty secret; enables in-container refresh and protects `/api/cron/refresh` (use `openssl rand -hex 32`) |
+| `CRON_REFRESH_HOUR` | No | `3` | Hour (0–23) for the daily refresh; uses `TZ` below |
+| `TZ` | No | `America/New_York` | Set in `docker-compose.prod.yml` — daily refresh at 3 AM Eastern |
 | `WATCHMODE_API_KEY` | No | — | Richer streaming data and deep links |
 
 Show metadata is shared across users and cached server-side. Watch lists, tags, watched state, and region preferences are per account.
@@ -93,16 +95,16 @@ rm -f data/tvminder.db
 
 Episode schedules and streaming providers are cached and should be refreshed periodically.
 
+**Docker (automatic):** Set `CRON_SECRET` in `.env` to any long random string. The container refreshes daily at **3:00 AM Eastern** (`TZ=America/New_York` in compose). Override the hour with `CRON_REFRESH_HOUR` (0–23). Logs: `docker compose logs`.
+
 **From the UI:** Settings → Refresh All Shows
 
-**Via cron (recommended for always-on deployments):**
+**Manual / external trigger** (optional):
 
 ```bash
 curl -H "Authorization: Bearer $CRON_SECRET" \
   http://<your-host>:3000/api/cron/refresh
 ```
-
-Schedule that daily with cron, systemd timer, or your orchestrator.
 
 ## Updating
 

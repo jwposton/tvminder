@@ -9,6 +9,7 @@ services:
     user: "1000:1000"
     environment:
       DATABASE_URL: file:/data/tvminder.db
+      TZ: America/New_York
     volumes:
       - ./data:/data
     restart: unless-stopped

@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 
-FROM node:20-alpine AS base
+# AWS public ECR mirror of Docker Hub library images — more reliable in CI than registry-1.docker.io
+FROM public.ecr.aws/docker/library/node:20-alpine AS base
 RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
@@ -33,8 +34,9 @@ COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./package.json
 COPY docker/entrypoint.sh /entrypoint.sh
+COPY docker/cron-refresh.sh docker/scheduled-refresh.sh /docker/
 RUN npm install --no-save prisma@6.19.3 \
-  && chmod +x /entrypoint.sh \
+  && chmod +x /entrypoint.sh /docker/cron-refresh.sh /docker/scheduled-refresh.sh \
   && chown -R node:node /app
 
 EXPOSE 3000

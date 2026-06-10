@@ -105,8 +105,9 @@ function SettingsGeneral() {
         <h2 className="mb-2 font-semibold">Data Refresh</h2>
         <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
           Manually refresh episode schedules and streaming providers for all monitored
-          shows. A nightly cron can call{" "}
-          <code className="text-xs">/api/cron/refresh</code>.
+          shows. With Docker, set <code className="text-xs">CRON_SECRET</code> in{" "}
+          <code className="text-xs">.env</code> to enable an automatic daily refresh
+          inside the container.
         </p>
         <button
           onClick={refreshAll}
