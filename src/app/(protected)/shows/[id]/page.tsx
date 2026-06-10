@@ -292,7 +292,7 @@ export default function ShowDetailPage() {
             </button>
           )}
         </div>
-        {show.seasons.map(({ season, episodes }) => {
+        {[...show.seasons].sort((a, b) => b.season - a.season).map(({ season, episodes }) => {
           const seasonAired = episodes.filter((ep) => isEpisodeAired(ep.airDate));
           const seasonHasAired = seasonAired.length > 0;
           const allSeasonAiredWatched =
