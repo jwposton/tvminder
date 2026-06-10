@@ -8,6 +8,7 @@ import { TmdbAttribution } from "@/components/TmdbAttribution";
 
 const REGIONS = [
   { code: "US", label: "United States" },
+  { code: "MX", label: "Mexico" },
   { code: "GB", label: "United Kingdom" },
   { code: "CA", label: "Canada" },
   { code: "AU", label: "Australia" },
