@@ -1,0 +1,16 @@
+services:
+  tvminder:
+    build: .
+    image: ghcr.io/jwposton/tvminder:local
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: file:/data/tvminder.db
+    volumes:
+      - tvminder-data:/data
+    restart: unless-stopped
+
+volumes:
+  tvminder-data:

@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              Int              @id @default(autoincrement())
+  email           String           @unique
+  passwordHash    String
+  name            String
+  preferredRegion String           @default("US")
+  createdAt       DateTime         @default(now())
+  sessions        Session[]
+  monitoredShows  MonitoredShow[]
+  tags            Tag[]
+  watchedEpisodes WatchedEpisode[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model MonitoredShow {
+  id              Int              @id @default(autoincrement())
+  userId          Int
+  tmdbId          Int
+  name            String
+  posterPath      String?
+  status          String?
+  preferredRegion String           @default("US")
+  addedAt         DateTime         @default(now())
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  showTags        ShowTag[]
+  watchedEpisodes WatchedEpisode[]
+
+  @@unique([userId, tmdbId])
+}
+
+model Tag {
+  id       Int       @id @default(autoincrement())
+  userId   Int
+  name     String
+  color    String    @default("#6366f1")
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  showTags ShowTag[]
+
+  @@unique([userId, name])
+}
+
+model ShowTag {
+  id              Int           @id @default(autoincrement())
+  monitoredShowId Int
+  tagId           Int
+  monitoredShow   MonitoredShow @relation(fields: [monitoredShowId], references: [id], onDelete: Cascade)
+  tag             Tag           @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([monitoredShowId, tagId])
+}
+
+model EpisodeCache {
+  id         Int       @id @default(autoincrement())
+  tmdbShowId Int
+  season     Int
+  episode    Int
+  name       String
+  airDate    DateTime?
+  stillPath  String?
+  overview   String?
+  refreshedAt DateTime @default(now())
+
+  @@unique([tmdbShowId, season, episode])
+  @@index([tmdbShowId])
+  @@index([airDate])
+}
+
+model ShowCache {
+  id              Int       @id @default(autoincrement())
+  tmdbId          Int       @unique
+  name            String
+  posterPath      String?
+  backdropPath    String?
+  status          String?
+  overview        String?
+  lastAirDate     DateTime?
+  nextEpisodeName String?
+  nextEpisodeAirDate DateTime?
+  nextSeason      Int?
+  nextEpisode     Int?
+  refreshedAt     DateTime  @default(now())
+}
+
+model WatchProvidersCache {
+  id            Int      @id @default(autoincrement())
+  tmdbShowId    Int
+  region        String
+  providersJson String
+  source        String   @default("tmdb")
+  refreshedAt   DateTime @default(now())
+
+  @@unique([tmdbShowId, region, source])
+  @@index([tmdbShowId])
+}
+
+model WatchedEpisode {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  tmdbShowId      Int
+  season          Int
+  episode         Int
+  watchedAt       DateTime      @default(now())
+  monitoredShowId Int?
+  user            User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  monitoredShow   MonitoredShow? @relation(fields: [monitoredShowId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, tmdbShowId, season, episode])
+  @@index([userId, tmdbShowId])
+}

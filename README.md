@@ -1,36 +1,131 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TVMinder
 
-## Getting Started
+Self-hosted TV show tracker for families. Monitor your shows, track watched episodes, tag your list, and filter by upcoming or newly released episodes — with streaming availability by country.
 
-First, run the development server:
+## Features
+
+- Separate accounts per family member (own watch lists, tags, and progress)
+- Search and add shows via [TMDb](https://www.themoviedb.org/)
+- Mark seasons/episodes watched; custom tags
+- Filter views: upcoming, recently aired, newly released unwatched
+- Regional streaming availability (TMDb; optional Watchmode upgrade)
+- SQLite database persisted in a Docker volume
+
+## Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+- A free [TMDb API key](https://www.themoviedb.org/settings/api) (API Read Access Token)
+
+## Quick start
+
+### 1. Configure environment
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Edit `.env` and set at minimum:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```env
+TMDB_API_KEY=your_tmdb_read_access_token
+CRON_SECRET=a-long-random-string
+DATABASE_URL=file:/data/tvminder.db
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 2. Start TVMinder
 
-## Learn More
+**From a published release (recommended):**
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Build from source:**
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+docker compose up --build -d
+```
 
-## Deploy on Vercel
+### 3. Open the app
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Visit `http://<your-host>:3000` and create an account at **Sign up**. Each family member should register their own account.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Image | Use case |
+|-------|----------|
+| `ghcr.io/jwposton/tvminder:latest` | Latest stable release |
+| `ghcr.io/jwposton/tvminder:0.1.0` | Pin to a specific version |
+
+If the GHCR package is private, run `docker login ghcr.io` first, or make the package public under GitHub → Packages → tvminder → Package settings.
+
+## Configuration
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `TMDB_API_KEY` | Yes | — | TMDb API Read Access Token (one key serves all users) |
+| `DATABASE_URL` | Yes | `file:/data/tvminder.db` | SQLite path inside the container |
+| `CRON_SECRET` | Recommended | — | Bearer token for the nightly refresh endpoint |
+| `WATCHMODE_API_KEY` | No | — | Richer streaming data and deep links |
+
+Show metadata is shared across users and cached server-side. Watch lists, tags, watched state, and region preferences are per account.
+
+## Data persistence
+
+Application data is stored in the `tvminder-data` Docker volume at `/data/tvminder.db` inside the container.
+
+```bash
+# Back up the database
+docker compose -f docker-compose.prod.yml exec tvminder \
+  cp /data/tvminder.db /data/tvminder.db.bak
+```
+
+To reset completely, stop the stack and remove the volume:
+
+```bash
+docker compose -f docker-compose.prod.yml down -v
+```
+
+## Keeping show data fresh
+
+Episode schedules and streaming providers are cached and should be refreshed periodically.
+
+**From the UI:** Settings → Refresh All Shows
+
+**Via cron (recommended for always-on deployments):**
+
+```bash
+curl -H "Authorization: Bearer $CRON_SECRET" \
+  http://<your-host>:3000/api/cron/refresh
+```
+
+Schedule that daily with cron, systemd timer, or your orchestrator.
+
+## Updating
+
+```bash
+docker compose -f docker-compose.prod.yml pull
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Database migrations run automatically on container start.
+
+To pin a version, set the image tag in `docker-compose.prod.yml`:
+
+```yaml
+image: ghcr.io/jwposton/tvminder:0.1.0
+```
+
+## Optional: Watchmode
+
+For episode-level streaming deep links and fresher catalog data, sign up at [api.watchmode.com](https://api.watchmode.com/) and add `WATCHMODE_API_KEY` to `.env`, then restart the container.
+
+## Attribution
+
+This product uses the [TMDb API](https://www.themoviedb.org/) but is not endorsed or certified by TMDb.
+
+## Development
+
+For local development without Docker, see [DEVELOPMENT.md](DEVELOPMENT.md).
+
+## License
+
+Private / personal use. TMDb and Watchmode have their own API terms of use.
